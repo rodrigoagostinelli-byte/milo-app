@@ -13,7 +13,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 # =====================================================
 
 st.set_page_config(
-    page_title="Pulso Milo",
+    page_title="Pulso Milo V4.0",
     layout="wide"
 )
 
