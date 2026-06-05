@@ -511,10 +511,34 @@ with st.sidebar:
         type=["csv"]
     )
 
-    columna_texto = st.text_input(
-        "Columna de texto",
-        "Introducción"
-    )
+    columna_texto = None
+    error_sidebar_csv = None
+
+    if file is not None:
+        try:
+            df_sidebar, _, _ = cargar_csv_seguro(file)
+            columnas_disponibles = df_sidebar.columns.tolist()
+            columnas_analizables = [
+                columna for columna in columnas_disponibles
+                if str(columna).strip().upper() != "TONALIDAD"
+            ]
+            if not columnas_analizables:
+                columnas_analizables = columnas_disponibles
+            columna_default = (
+                "Introducción"
+                if "Introducción" in columnas_analizables
+                else columnas_analizables[0]
+            )
+            columna_texto = st.selectbox(
+                "Columna a analizar",
+                columnas_analizables,
+                index=columnas_analizables.index(columna_default)
+            )
+        except ValueError as e:
+            error_sidebar_csv = str(e)
+            st.error("No se pudo leer el CSV para listar sus columnas.")
+    else:
+        st.caption("Subí un CSV para habilitar la selección de columnas.")
 
     modelo_nombre = st.selectbox(
         "Modelo",
@@ -531,7 +555,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.caption(
-        "La clasificación final sigue esta prioridad: Tonalidad > Heurística > Modelo."
+        "La clasificación final sigue esta prioridad: Tonalidad > Heurística > Modelo. Si existe TONALIDAD, además se habilita la comparación contra el análisis nuevo."
     )
 
 
@@ -799,9 +823,11 @@ st.markdown("<div class='preview-label'>Archivo cargado</div>", unsafe_allow_htm
 for aviso in avisos_csv:
     st.warning(aviso)
 
+columna_tonalidad = buscar_columna(df, "TONALIDAD")
+usa_tonalidad_archivo = columna_tonalidad is not None
+
 meta_cols = st.columns([1.1, 1.1, 1.1, 2.2])
 with meta_cols[0]:
-    usa_tonalidad_archivo = "Tonalidad" in df.columns
     tarjeta_metrica(
         "Registros",
         f"{len(df):,}".replace(",", "."),
@@ -819,7 +845,7 @@ with meta_cols[2]:
     tarjeta_metrica(
         "Tonalidad",
         "Disponible" if usa_tonalidad_archivo else "No disponible",
-        "Se prioriza cuando el valor es válido",
+        "Se usa para priorización y para comparar contra el nuevo análisis",
         "warning"
     )
 with meta_cols[3]:
@@ -842,8 +868,13 @@ with meta_cols[3]:
 with st.expander("Vista previa del archivo", expanded=False):
     st.dataframe(df.head(), use_container_width=True)
 
-if columna_texto not in df.columns:
-    st.error(f"No existe la columna '{columna_texto}' en el archivo cargado.")
+if error_sidebar_csv is not None:
+    st.error("No fue posible interpretar el archivo para habilitar la selección de columnas.")
+    st.code(error_sidebar_csv)
+    st.stop()
+
+if not columna_texto or columna_texto not in df.columns:
+    st.error("Seleccioná una columna válida del archivo para ejecutar el análisis.")
     st.stop()
 
 contexto_actual = {
@@ -860,11 +891,15 @@ if ejecutar:
     confianzas = []
     sentimientos_final = []
     fuentes_sentimiento = []
+    sentimientos_post_analisis = []
+    tonalidades_normalizadas = []
+    comparaciones_tonalidad = []
+    coincidencias_tonalidad = []
 
     textos = df[columna_texto].astype(str).tolist()
     tonalidades = (
-        df["Tonalidad"].tolist()
-        if "Tonalidad" in df.columns else [None] * len(textos)
+        df[columna_tonalidad].tolist()
+        if columna_tonalidad else [None] * len(textos)
     )
 
     total = len(textos)
@@ -885,11 +920,32 @@ if ejecutar:
                 sent,
                 tonalidad_valor
             )
+            sent_post_analisis, _ = ajustar_sentimiento(
+                texto,
+                sent,
+                None
+            )
+            sent_post_dashboard = normalizar_sentimiento_dashboard(sent_post_analisis)
+            tonalidad_normalizada = normalizar_tonalidad(tonalidad_valor)
+
+            if tonalidad_normalizada is None:
+                comparacion_tonalidad = "Sin dato previo válido"
+                coincide_tonalidad = None
+            elif tonalidad_normalizada == sent_post_dashboard:
+                comparacion_tonalidad = "Coincide"
+                coincide_tonalidad = True
+            else:
+                comparacion_tonalidad = "Cambia"
+                coincide_tonalidad = False
 
             sentimientos.append(sent)
             confianzas.append(conf)
             sentimientos_final.append(sent_ajustado)
             fuentes_sentimiento.append(fuente)
+            sentimientos_post_analisis.append(sent_post_dashboard)
+            tonalidades_normalizadas.append(tonalidad_normalizada)
+            comparaciones_tonalidad.append(comparacion_tonalidad)
+            coincidencias_tonalidad.append(coincide_tonalidad)
 
         progreso = min((i + batch_size) / total, 1.0)
         progress_bar.progress(progreso)
@@ -902,6 +958,10 @@ if ejecutar:
     df_resultado["confianza"] = confianzas
     df_resultado["sentimiento_final"] = sentimientos_final
     df_resultado["fuente_sentimiento"] = fuentes_sentimiento
+    df_resultado["sentimiento_post_analisis"] = sentimientos_post_analisis
+    df_resultado["tonalidad_previa"] = tonalidades_normalizadas
+    df_resultado["comparacion_tonalidad"] = comparaciones_tonalidad
+    df_resultado["coincide_tonalidad_previa"] = coincidencias_tonalidad
     df_resultado["sentimiento_dashboard"] = (
         df_resultado["sentimiento_final"]
         .replace({
@@ -945,8 +1005,8 @@ hero_meta = [
     f"Modelo activo: {modelo_nombre}",
     f"Fuente dominante: {fuente_dominante}"
 ]
-if "Tonalidad" in df.columns:
-    hero_meta.append("Columna Tonalidad detectada")
+if usa_tonalidad_archivo:
+    hero_meta.append(f"Comparación activa con {columna_tonalidad}")
 
 st.markdown(
     "<div class='hero-meta-row'>" + "".join([
@@ -992,7 +1052,11 @@ with k5:
         "primary"
     )
 
-tab1, tab2 = st.tabs(["Resumen", "Detalle"])
+if usa_tonalidad_archivo:
+    tab1, tab_comp, tab2 = st.tabs(["Resumen", "Comparación", "Detalle"])
+else:
+    tab1, tab2 = st.tabs(["Resumen", "Detalle"])
+    tab_comp = None
 
 with tab1:
     c1, c2 = st.columns([1.6, 1])
@@ -1170,6 +1234,110 @@ with tab1:
                 )
         else:
             tarjeta_vacia("No hay comentarios críticos destacados para mostrar.")
+
+if tab_comp is not None:
+    with tab_comp:
+        panel_titulo(
+            "Comparación con TONALIDAD previa",
+            "Cruce entre la sensibilidad previa detectada en el archivo y el resultado nuevo generado por modelo + heurística, sin alterar el motor actual del dashboard."
+        )
+
+        df_comparable = df[df["tonalidad_previa"].notna()].copy()
+        total_comparable = len(df_comparable)
+        coincidencias = int(df_comparable["coincide_tonalidad_previa"].fillna(False).sum()) if total_comparable else 0
+        cambios = total_comparable - coincidencias
+        tasa_coincidencia = coincidencias / total_comparable if total_comparable else 0
+
+        c_comp_1, c_comp_2, c_comp_3 = st.columns(3)
+        with c_comp_1:
+            tarjeta_metrica(
+                "Base comparable",
+                f"{total_comparable:,}".replace(",", "."),
+                "Registros con TONALIDAD válida para contrastar",
+                "primary"
+            )
+        with c_comp_2:
+            tarjeta_metrica(
+                "Coincidencia",
+                f"{tasa_coincidencia:.1%}" if total_comparable else "0.0%",
+                f"{coincidencias:,} registros alineados".replace(",", "."),
+                "positive"
+            )
+        with c_comp_3:
+            tarjeta_metrica(
+                "Cambios detectados",
+                f"{cambios:,}".replace(",", "."),
+                "Diferencias entre TONALIDAD previa y análisis nuevo",
+                "negative"
+            )
+
+        if total_comparable == 0:
+            tarjeta_vacia("La columna TONALIDAD fue detectada, pero no contiene valores normalizables a POS, NEG o NEU.")
+        else:
+            resumen_comparacion = (
+                df["comparacion_tonalidad"]
+                .fillna("Sin dato previo válido")
+                .value_counts()
+                .rename_axis("estado")
+                .reset_index(name="cantidad")
+            )
+
+            dist_comparativa = pd.concat([
+                df_comparable["tonalidad_previa"].value_counts().rename("cantidad").rename_axis("sentimiento").reset_index().assign(serie="TONALIDAD previa"),
+                df_comparable["sentimiento_post_analisis"].value_counts().rename("cantidad").rename_axis("sentimiento").reset_index().assign(serie="Post análisis")
+            ], ignore_index=True)
+
+            matriz_comparacion = pd.crosstab(
+                df_comparable["tonalidad_previa"],
+                df_comparable["sentimiento_post_analisis"]
+            ).reindex(index=["POS", "NEU", "NEG"], columns=["POS", "NEU", "NEG"], fill_value=0)
+
+            g1, g2 = st.columns([1, 1.25])
+            with g1:
+                fig_comp = px.bar(
+                    resumen_comparacion,
+                    x="estado",
+                    y="cantidad",
+                    color="estado",
+                    color_discrete_map={
+                        "Coincide": "#16A34A",
+                        "Cambia": "#DC2626",
+                        "Sin dato previo válido": "#94A3B8"
+                    }
+                )
+                fig_comp.update_layout(showlegend=False)
+                st.plotly_chart(estilizar_figura(fig_comp, height=350), use_container_width=True)
+            with g2:
+                fig_dist = px.bar(
+                    dist_comparativa,
+                    x="sentimiento",
+                    y="cantidad",
+                    color="serie",
+                    barmode="group",
+                    color_discrete_map={
+                        "TONALIDAD previa": "#7C3AED",
+                        "Post análisis": "#2563EB"
+                    }
+                )
+                st.plotly_chart(estilizar_figura(fig_dist, height=350), use_container_width=True)
+
+            st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title'>Matriz de comparación</div>", unsafe_allow_html=True)
+            st.markdown("<div class='section-subtitle'>Filas = TONALIDAD previa · Columnas = resultado nuevo luego de modelo + heurística.</div>", unsafe_allow_html=True)
+            st.dataframe(matriz_comparacion, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            cambios_df = df_comparable[df_comparable["comparacion_tonalidad"] == "Cambia"].copy()
+            if len(cambios_df):
+                panel_titulo(
+                    "Casos con diferencia",
+                    "Muestra de registros donde la TONALIDAD previa no coincide con el análisis nuevo."
+                )
+                columnas_mostrar = [columna_texto, "tonalidad_previa", "sentimiento_post_analisis", "sentimiento_dashboard", "fuente_sentimiento", "confianza"]
+                columnas_mostrar = [col for col in columnas_mostrar if col in cambios_df.columns]
+                st.dataframe(cambios_df[columnas_mostrar].head(100), use_container_width=True)
+            else:
+                tarjeta_vacia("No se detectaron diferencias entre la TONALIDAD previa válida y el análisis nuevo.")
 
 with tab2:
     panel_titulo(
