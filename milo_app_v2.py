@@ -512,66 +512,33 @@ with st.sidebar:
     )
 
     columna_texto = None
-    columna_tonalidad_seleccionada = None
     error_sidebar_csv = None
 
-if file is not None:
-    try:
-        df_sidebar, _, _ = cargar_csv_seguro(file)
-        columnas_disponibles = df_sidebar.columns.tolist()
-
-        # Detecta si existe una columna llamada TONALIDAD
-        columna_tonalidad_detectada = buscar_columna(df_sidebar, "TONALIDAD")
-
-        # Selector de columna de texto.
-        # Si existe TONALIDAD exacta, la excluye para no analizarla como comentario.
-        columnas_analizables = [
-            c for c in columnas_disponibles
-            if str(c).strip().upper() != "TONALIDAD"
-        ]
-
-        if not columnas_analizables:
-            columnas_analizables = columnas_disponibles
-
-        columna_default = (
-            "Introducción"
-            if "Introducción" in columnas_analizables
-            else columnas_analizables[0]
-        )
-
-        columna_texto = st.selectbox(
-            "Columna a analizar",
-            columnas_analizables,
-            index=columnas_analizables.index(columna_default)
-        )
-
-        # Selector opcional de columna de tonalidad previa.
-        # Si existe TONALIDAD, la selecciona por defecto.
-        # Si no existe, permite elegir manualmente otra columna.
-        opciones_tonalidad = ["Sin tonalidad previa"] + [
-            c for c in columnas_disponibles
-            if c != columna_texto
-        ]
-
-        if columna_tonalidad_detectada in opciones_tonalidad:
-            index_tonalidad = opciones_tonalidad.index(columna_tonalidad_detectada)
-        else:
-            index_tonalidad = 0
-
-        columna_tonalidad_seleccionada = st.selectbox(
-            "Columna de tonalidad previa",
-            opciones_tonalidad,
-            index=index_tonalidad
-        )
-
-        if columna_tonalidad_seleccionada == "Sin tonalidad previa":
-            columna_tonalidad_seleccionada = None
-
-    except ValueError as e:
-        error_sidebar_csv = str(e)
-        st.error("No se pudo leer el CSV para listar sus columnas.")
-else:
-    st.caption("Subí un CSV para habilitar la selección de columnas.")
+    if file is not None:
+        try:
+            df_sidebar, _, _ = cargar_csv_seguro(file)
+            columnas_disponibles = df_sidebar.columns.tolist()
+            columnas_analizables = [
+                c for c in columnas_disponibles
+                if str(c).strip().upper() != "TONALIDAD"
+            ]
+            if not columnas_analizables:
+                columnas_analizables = columnas_disponibles
+            columna_default = (
+                "Introducción"
+                if "Introducción" in columnas_analizables
+                else columnas_analizables[0]
+            )
+            columna_texto = st.selectbox(
+                "Columna a analizar",
+                columnas_analizables,
+                index=columnas_analizables.index(columna_default)
+            )
+        except ValueError as e:
+            error_sidebar_csv = str(e)
+            st.error("No se pudo leer el CSV para listar sus columnas.")
+    else:
+        st.caption("Subí un CSV para habilitar la selección de columnas.")
 
     modelo_nombre = st.selectbox(
         "Modelo",
