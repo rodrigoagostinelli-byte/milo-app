@@ -630,15 +630,7 @@ def normalizar_tonalidad(valor):
         "pos": "POS",
         "positivo": "POS",
         "positiva": "POS",
-        "positive": "POS",
-        "neg": "NEG",
-        "negativo": "NEG",
-        "negativa": "NEG",
-        "negative": "NEG",
-        "neu": "NEU",
-        "neutro": "NEU",
-        "neutra": "NEU",
-        "neutral": "NEU"
+        "positive": "POS"
     }
 
     return mapa.get(valor)
