@@ -13,7 +13,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 # =====================================================
 
 st.set_page_config(
-    page_title="Pulso Milo V4.0",
+    page_title="Milo - Sentiment Intelligence Engine",
     layout="wide"
 )
 
@@ -491,7 +491,7 @@ st.markdown(
     """
     <div class="hero-card">
         <div class="hero-kicker">Milo</div>
-        <h1 class="hero-title">Pulso de Sentimiento</h1>
+        <h1 class="hero-title">Milo - Sentiment Intelligence Engine</h1>
         <div class="hero-subtitle">Monitoreo de sentimiento, detección de temas y revisión de comentarios destacados en una interfaz sobria y pensada para compartir.</div>
     </div>
     """,
