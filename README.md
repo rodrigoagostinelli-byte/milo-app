@@ -1,2 +1,2 @@
 # milo-app
-Milo es una app para analisis de sentimiento en español
+Milo es una app, una solución ágil para analizar la sensibilidad y tonalidad de comentarios sobre campañas, eventos o contenidos, detectando percepciones positivas, negativas o neutras mediante IA especializada.​
