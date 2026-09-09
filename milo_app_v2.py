@@ -1374,33 +1374,33 @@ with tab1:
             .sort_values("confianza", ascending=False)
         )
 
-    with h1:
-        if len(positivos_df):
-            mejor = positivos_df.iloc[0]
-            tarjeta_highlight(
-                "Comentario positivo destacado",
-                mejor[columna_texto],
-                mejor["confianza"],
-                mejor["fuente_sentimiento"],
-                "positive"
-            )
-        else:
-            tarjeta_vacia("No se detectaron comentarios positivos para destacar.")
-
-    with h2:
-        if len(negativos_df):
-            peor = negativos_df.iloc[0]
-            tarjeta_highlight(
-                "Comentario crítico destacado",
-                peor[columna_texto],
-                peor["confianza"],
-                peor["fuente_sentimiento"],
-                "negative"
-            )
-        else:
-            tarjeta_vacia("No se detectaron comentarios negativos para destacar.")
-
-    st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+        with h1:
+            if len(positivos_df):
+                mejor = positivos_df.iloc[0]
+                tarjeta_highlight(
+                    "Comentario positivo destacado",
+                    mejor[columna_texto],
+                    mejor["confianza"],
+                    mejor["fuente_sentimiento"],
+                    "positive"
+                )
+            else:
+                tarjeta_vacia("No se detectaron comentarios positivos para destacar.")
+    
+        with h2:
+            if len(negativos_df):
+                peor = negativos_df.iloc[0]
+                tarjeta_highlight(
+                    "Comentario crítico destacado",
+                    peor[columna_texto],
+                    peor["confianza"],
+                    peor["fuente_sentimiento"],
+                    "negative"
+                )
+            else:
+                tarjeta_vacia("No se detectaron comentarios negativos para destacar.")
+    
+        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
 
     panel_titulo(
         "Temas detectados",
