@@ -17,7 +17,13 @@ st.set_page_config(
     layout="wide"
 )
 
+st.set_page_config(
+    page_title="MILO",
+    page_icon="milo_logo.png",
+    layout="wide"
+)
 
+st.logo("milo_logo.png")
 # =====================================================
 # ESTILO
 # =====================================================
