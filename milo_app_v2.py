@@ -1359,121 +1359,121 @@ with tab1:
             )
         st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
     
-        panel_titulo(
-            "Comentarios representativos",
-            "Selección automática del comentario positivo y del comentario negativo con mayor confianza del modelo."
-        )
-    
-        h1, h2 = st.columns(2)
-        positivos_df = (
-            df[df["sentimiento_dashboard"] == "POS"]
-            .sort_values("confianza", ascending=False)
-        )
-        negativos_df = (
-            df[df["sentimiento_dashboard"] == "NEG"]
-            .sort_values("confianza", ascending=False)
-        )
-
-        with h1:
-            if len(positivos_df):
-                mejor = positivos_df.iloc[0]
-                tarjeta_highlight(
-                    "Comentario positivo destacado",
-                    mejor[columna_texto],
-                    mejor["confianza"],
-                    mejor["fuente_sentimiento"],
-                    "positive"
-                )
-            else:
-                tarjeta_vacia("No se detectaron comentarios positivos para destacar.")
-    
-        with h2:
-            if len(negativos_df):
-                peor = negativos_df.iloc[0]
-                tarjeta_highlight(
-                    "Comentario crítico destacado",
-                    peor[columna_texto],
-                    peor["confianza"],
-                    peor["fuente_sentimiento"],
-                    "negative"
-                )
-            else:
-                tarjeta_vacia("No se detectaron comentarios negativos para destacar.")
-    
-        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-
     panel_titulo(
-        "Temas detectados",
-        "Bigramas frecuentes sobre comentarios positivos y negativos, con limpieza básica de texto y un umbral mínimo de repetición."
+        "Comentarios representativos",
+        "Selección automática del comentario positivo y del comentario negativo con mayor confianza del modelo."
     )
 
-    t1, t2 = st.columns(2)
-    with t1:
-        temas_pos = obtener_top_bigramas(
-            df[df["sentimiento_dashboard"] == "POS"][columna_texto]
-        )
-        if len(temas_pos):
-            fig_pos = px.bar(
-                temas_pos,
-                x="frecuencia",
-                y="tema",
-                orientation="h",
-                color_discrete_sequence=["#16A34A"]
-            )
-            fig_pos.update_layout(yaxis=dict(categoryorder="total ascending"), showlegend=False)
-            st.plotly_chart(estilizar_figura(fig_pos, height=420), use_container_width=True)
-        else:
-            tarjeta_vacia("No hay suficientes comentarios positivos para detectar temas de forma estable.")
+    h1, h2 = st.columns(2)
+    positivos_df = (
+        df[df["sentimiento_dashboard"] == "POS"]
+        .sort_values("confianza", ascending=False)
+    )
+    negativos_df = (
+        df[df["sentimiento_dashboard"] == "NEG"]
+        .sort_values("confianza", ascending=False)
+    )
 
-    with t2:
-        temas_neg = obtener_top_bigramas(
-            df[df["sentimiento_dashboard"] == "NEG"][columna_texto]
-        )
-        if len(temas_neg):
-            fig_neg = px.bar(
-                temas_neg,
-                x="frecuencia",
-                y="tema",
-                orientation="h",
-                color_discrete_sequence=["#DC2626"]
+    with h1:
+        if len(positivos_df):
+            mejor = positivos_df.iloc[0]
+            tarjeta_highlight(
+                "Comentario positivo destacado",
+                mejor[columna_texto],
+                mejor["confianza"],
+                mejor["fuente_sentimiento"],
+                "positive"
             )
-            fig_neg.update_layout(yaxis=dict(categoryorder="total ascending"), showlegend=False)
-            st.plotly_chart(estilizar_figura(fig_neg, height=420), use_container_width=True)
         else:
-            tarjeta_vacia("No hay suficientes comentarios negativos para detectar temas de forma estable.")
+            tarjeta_vacia("No se detectaron comentarios positivos para destacar.")
+
+    with h2:
+        if len(negativos_df):
+            peor = negativos_df.iloc[0]
+            tarjeta_highlight(
+                "Comentario crítico destacado",
+                peor[columna_texto],
+                peor["confianza"],
+                peor["fuente_sentimiento"],
+                "negative"
+            )
+        else:
+            tarjeta_vacia("No se detectaron comentarios negativos para destacar.")
 
     st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
 
-    d1, d2 = st.columns(2)
-    with d1:
-        panel_titulo(
-            "Comentarios positivos destacados",
-            "Registros ordenados por confianza del modelo dentro del grupo positivo."
-        )
-        if len(positivos_df):
-            for _, row in positivos_df.head(5).iterrows():
-                tarjeta_comentario(
-                    row[columna_texto],
-                    row["confianza"],
-                    row["fuente_sentimiento"]
-                )
-        else:
-            tarjeta_vacia("No hay comentarios positivos destacados para mostrar.")
+panel_titulo(
+    "Temas detectados",
+    "Bigramas frecuentes sobre comentarios positivos y negativos, con limpieza básica de texto y un umbral mínimo de repetición."
+)
 
-    with d2:
-        panel_titulo(
-            "Comentarios críticos destacados",
-            "Registros ordenados por confianza del modelo dentro del grupo negativo."
+t1, t2 = st.columns(2)
+with t1:
+    temas_pos = obtener_top_bigramas(
+        df[df["sentimiento_dashboard"] == "POS"][columna_texto]
+    )
+    if len(temas_pos):
+        fig_pos = px.bar(
+            temas_pos,
+            x="frecuencia",
+            y="tema",
+            orientation="h",
+            color_discrete_sequence=["#16A34A"]
         )
-        if len(negativos_df):
-            for _, row in negativos_df.head(5).iterrows():
-                tarjeta_comentario(
-                    row[columna_texto],
-                    row["confianza"],
-                    row["fuente_sentimiento"]
-                )
-        else:
-            tarjeta_vacia("No hay comentarios críticos destacados para mostrar.")
+        fig_pos.update_layout(yaxis=dict(categoryorder="total ascending"), showlegend=False)
+        st.plotly_chart(estilizar_figura(fig_pos, height=420), use_container_width=True)
+    else:
+        tarjeta_vacia("No hay suficientes comentarios positivos para detectar temas de forma estable.")
+
+with t2:
+    temas_neg = obtener_top_bigramas(
+        df[df["sentimiento_dashboard"] == "NEG"][columna_texto]
+    )
+    if len(temas_neg):
+        fig_neg = px.bar(
+            temas_neg,
+            x="frecuencia",
+            y="tema",
+            orientation="h",
+            color_discrete_sequence=["#DC2626"]
+        )
+        fig_neg.update_layout(yaxis=dict(categoryorder="total ascending"), showlegend=False)
+        st.plotly_chart(estilizar_figura(fig_neg, height=420), use_container_width=True)
+    else:
+        tarjeta_vacia("No hay suficientes comentarios negativos para detectar temas de forma estable.")
+
+st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+
+d1, d2 = st.columns(2)
+with d1:
+    panel_titulo(
+        "Comentarios positivos destacados",
+        "Registros ordenados por confianza del modelo dentro del grupo positivo."
+    )
+    if len(positivos_df):
+        for _, row in positivos_df.head(5).iterrows():
+            tarjeta_comentario(
+                row[columna_texto],
+                row["confianza"],
+                row["fuente_sentimiento"]
+            )
+    else:
+        tarjeta_vacia("No hay comentarios positivos destacados para mostrar.")
+
+with d2:
+    panel_titulo(
+        "Comentarios críticos destacados",
+        "Registros ordenados por confianza del modelo dentro del grupo negativo."
+    )
+    if len(negativos_df):
+        for _, row in negativos_df.head(5).iterrows():
+            tarjeta_comentario(
+                row[columna_texto],
+                row["confianza"],
+                row["fuente_sentimiento"]
+            )
+    else:
+        tarjeta_vacia("No hay comentarios críticos destacados para mostrar.")
 
 with tab2:
     panel_titulo(
