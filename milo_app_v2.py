@@ -636,7 +636,7 @@ patrones_negativos = [
     r"\bvrg\b",
     r"\bv3rga\b",
     r"\bberga\b",
-    r"\bverg4\b"
+    r"\bverg4\b",
     r"\bmal[ií]sim[oa]s?\b",
     r"\bmal[oa]s?\b",
     r"\bp[eé]sim[oa]s?\b",
@@ -1061,6 +1061,69 @@ if st.session_state.contexto_resultado != contexto_actual:
 
 df = st.session_state.resultado_df.copy()
 
+# =====================================================
+# AMPLIFICACIÓN SOCIAL
+# =====================================================
+
+columna_compartidos = buscar_columna(
+    df,
+    "COMPARTIDOS"
+)
+
+usa_compartidos = columna_compartidos is not None
+
+if usa_compartidos:
+
+    df["compartidos_calc"] = (
+        pd.to_numeric(
+            df[columna_compartidos],
+            errors="coerce"
+        )
+        .fillna(0)
+        .clip(lower=0)
+    )
+
+    df["peso_social"] = (
+        1 + df["compartidos_calc"]
+    )
+
+    positive_amplified = df.loc[
+        df["sentimiento_dashboard"] == "POS",
+        "peso_social"
+    ].sum()
+
+    negative_amplified = df.loc[
+        df["sentimiento_dashboard"] == "NEG",
+        "peso_social"
+    ].sum()
+
+    neutral_amplified = df.loc[
+        df["sentimiento_dashboard"] == "NEU",
+        "peso_social"
+    ].sum()
+
+    total_amplified = (
+        positive_amplified
+        + negative_amplified
+        + neutral_amplified
+    )
+
+    amplified_score = (
+        (
+            positive_amplified
+            - negative_amplified
+        )
+        / total_amplified
+    ) * 100 if total_amplified else 0
+
+else:
+
+    positive_amplified = 0
+    negative_amplified = 0
+    neutral_amplified = 0
+    total_amplified = 0
+    amplified_score = 0
+    
 total = len(df)
 positivos = df["sentimiento_dashboard"].eq("POS").sum()
 negativos = df["sentimiento_dashboard"].eq("NEG").sum()
@@ -1186,7 +1249,52 @@ with tab1:
         )
         fig_fuente.update_layout(showlegend=False)
         st.plotly_chart(estilizar_figura(fig_fuente, height=240), use_container_width=True)
+    # =====================================================
+    # AMPLIFICACION SOCIAL
+    # =====================================================
 
+    if usa_compartidos:
+
+        panel_titulo(
+            "Conversación vs Amplificación",
+            "Comparación entre volumen de publicaciones y volumen total propagado."
+        )
+
+        comparativo_amp = pd.DataFrame({
+            "sentimiento": ["POS", "NEG", "NEU"],
+            "Conversación": [
+                positivos,
+                negativos,
+                neutros
+            ],
+            "Amplificación": [
+                positive_amplified,
+                negative_amplified,
+                neutral_amplified
+            ]
+        })
+
+        comparativo_amp = comparativo_amp.melt(
+            id_vars="sentimiento",
+            var_name="tipo",
+            value_name="valor"
+        )
+
+        fig_amp = px.bar(
+            comparativo_amp,
+            x="sentimiento",
+            y="valor",
+            color="tipo",
+            barmode="group"
+        )
+
+        st.plotly_chart(
+            estilizar_figura(
+                fig_amp,
+                height=420
+            ),
+            use_container_width=True
+        )
     st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
 
     panel_titulo(
@@ -1310,7 +1418,40 @@ with tab2:
         "Detalle completo",
         "Filtrado interactivo sobre el dataset procesado y exportación del resultado visible."
     )
+    # =====================================================
+    # PUBLICACIONES MÁS AMPLIFICADAS
+    # =====================================================
 
+    if usa_compartidos:
+
+        panel_titulo(
+            "Publicaciones más amplificadas",
+            "Ranking de contenidos según cantidad de compartidos."
+        )
+
+        columnas_top = [
+            columna_texto,
+            columna_compartidos,
+            "sentimiento_dashboard",
+            "confianza"
+        ]
+
+        columnas_top = [
+            c for c in columnas_top
+            if c in df.columns
+        ]
+
+        st.dataframe(
+            df.sort_values(
+                ["compartidos_calc", "confianza"],
+                ascending=[False, False]
+            )[columnas_top].head(20),
+            use_container_width=True
+        )
+
+    # =====================================================
+    # COMPARACION CON TONALIDAD
+    # =====================================================
     if usa_tonalidad_archivo:
         panel_titulo(
             "Comparación con TONALIDAD previa",
