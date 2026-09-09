@@ -13,11 +13,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 # =====================================================
 
 st.set_page_config(
-    page_title="Milo - Sentiment Intelligence Engine",
-    layout="wide"
-)
-
-st.set_page_config(
     page_title="MILO",
     page_icon="milo_logo.png",
     layout="wide"
