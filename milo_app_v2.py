@@ -1218,161 +1218,161 @@ with tab1:
         fig.update_layout(showlegend=True)
         st.plotly_chart(estilizar_figura(fig, height=420), use_container_width=True)
 
-with c2:
-    panel_titulo(
-        "Resumen conversacional",
-        "Análisis basado en volumen de publicaciones."
-    )
-
-    st.markdown(
-        f"""
-        <div class="panel-card">
-            <ul class="summary-list">
-                <li>Sentimiento dominante: <strong>{html.escape(str(sentimiento_dominante))}</strong>.</li>
-                <li>Participación positiva: <strong>{positivos / total:.1%}</strong>.</li>
-                <li>Participación negativa: <strong>{negativos / total:.1%}</strong>.</li>
-                <li>Fuente dominante de clasificación: <strong>{html.escape(str(fuente_dominante))}</strong>.</li>
-                <li>Confianza promedio del modelo: <strong>{conf_prom:.1%}</strong>.</li>
-            </ul>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    fig_fuente = px.bar(
-        fuente_resumen,
-        x="cantidad",
-        y="fuente",
-        orientation="h",
-        color="fuente",
-        color_discrete_map={
-            "MODELO": "#2563EB",
-            "HEURISTICA": "#F59E0B",
-            "TONALIDAD": "#7C3AED"
-        }
-    )
-
-    fig_fuente.update_layout(showlegend=False)
-
-    st.plotly_chart(
-        estilizar_figura(fig_fuente, height=240),
-        use_container_width=True
-    )
-
-# =====================================================
-# RESUMEN AMPLIFICADO
-# =====================================================
-
-if usa_compartidos:
-
-    amp_dist = {
-        "POS": positive_amplified,
-        "NEG": negative_amplified,
-        "NEU": neutral_amplified
-    }
-
-    sentimiento_amplificado_dominante = max(
-        amp_dist,
-        key=amp_dist.get
-    )
-
-    positive_amplified_pct = (
-        positive_amplified / total_amplified
-    ) if total_amplified else 0
-
-    negative_amplified_pct = (
-        negative_amplified / total_amplified
-    ) if total_amplified else 0
-
-    neutral_amplified_pct = (
-        neutral_amplified / total_amplified
-    ) if total_amplified else 0
-
-    with c3:
-
+    with c2:
         panel_titulo(
-            "Resumen amplificado",
-            "Análisis basado en publicaciones y compartidos."
+            "Resumen conversacional",
+            "Análisis basado en volumen de publicaciones."
         )
-
+    
         st.markdown(
             f"""
             <div class="panel-card">
                 <ul class="summary-list">
-                    <li>Sentimiento dominante: <strong>{sentimiento_amplificado_dominante}</strong>.</li>
-                    <li>Impacto positivo: <strong>{positive_amplified_pct:.1%}</strong>.</li>
-                    <li>Impacto negativo: <strong>{negative_amplified_pct:.1%}</strong>.</li>
-                    <li>Impacto neutro: <strong>{neutral_amplified_pct:.1%}</strong>.</li>
-                    <li>Amplified Score: <strong>{amplified_score:.1f}</strong>.</li>
+                    <li>Sentimiento dominante: <strong>{html.escape(str(sentimiento_dominante))}</strong>.</li>
+                    <li>Participación positiva: <strong>{positivos / total:.1%}</strong>.</li>
+                    <li>Participación negativa: <strong>{negativos / total:.1%}</strong>.</li>
+                    <li>Fuente dominante de clasificación: <strong>{html.escape(str(fuente_dominante))}</strong>.</li>
+                    <li>Confianza promedio del modelo: <strong>{conf_prom:.1%}</strong>.</li>
                 </ul>
             </div>
             """,
             unsafe_allow_html=True
         )
-
-
-    # =====================================================
-    # AMPLIFICACION SOCIAL
-    # =====================================================
-
-    if usa_compartidos:
-
-        panel_titulo(
-            "Conversación vs Amplificación",
-            "Comparación entre volumen de publicaciones y volumen total propagado."
+    
+        fig_fuente = px.bar(
+            fuente_resumen,
+            x="cantidad",
+            y="fuente",
+            orientation="h",
+            color="fuente",
+            color_discrete_map={
+                "MODELO": "#2563EB",
+                "HEURISTICA": "#F59E0B",
+                "TONALIDAD": "#7C3AED"
+            }
         )
-
-        comparativo_amp = pd.DataFrame({
-            "sentimiento": ["POS", "NEG", "NEU"],
-            "Conversación": [
-                positivos,
-                negativos,
-                neutros
-            ],
-            "Amplificación": [
-                positive_amplified,
-                negative_amplified,
-                neutral_amplified
-            ]
-        })
-
-        comparativo_amp = comparativo_amp.melt(
-            id_vars="sentimiento",
-            var_name="tipo",
-            value_name="valor"
-        )
-
-        fig_amp = px.bar(
-            comparativo_amp,
-            x="sentimiento",
-            y="valor",
-            color="tipo",
-            barmode="group"
-        )
-
+    
+        fig_fuente.update_layout(showlegend=False)
+    
         st.plotly_chart(
-            estilizar_figura(
-                fig_amp,
-                height=420
-            ),
+            estilizar_figura(fig_fuente, height=240),
             use_container_width=True
         )
-    st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-
-    panel_titulo(
-        "Comentarios representativos",
-        "Selección automática del comentario positivo y del comentario negativo con mayor confianza del modelo."
-    )
-
-    h1, h2 = st.columns(2)
-    positivos_df = (
-        df[df["sentimiento_dashboard"] == "POS"]
-        .sort_values("confianza", ascending=False)
-    )
-    negativos_df = (
-        df[df["sentimiento_dashboard"] == "NEG"]
-        .sort_values("confianza", ascending=False)
-    )
+    
+    # =====================================================
+    # RESUMEN AMPLIFICADO
+    # =====================================================
+    
+    if usa_compartidos:
+    
+        amp_dist = {
+            "POS": positive_amplified,
+            "NEG": negative_amplified,
+            "NEU": neutral_amplified
+        }
+    
+        sentimiento_amplificado_dominante = max(
+            amp_dist,
+            key=amp_dist.get
+        )
+    
+        positive_amplified_pct = (
+            positive_amplified / total_amplified
+        ) if total_amplified else 0
+    
+        negative_amplified_pct = (
+            negative_amplified / total_amplified
+        ) if total_amplified else 0
+    
+        neutral_amplified_pct = (
+            neutral_amplified / total_amplified
+        ) if total_amplified else 0
+    
+        with c3:
+    
+            panel_titulo(
+                "Resumen amplificado",
+                "Análisis basado en publicaciones y compartidos."
+            )
+    
+            st.markdown(
+                f"""
+                <div class="panel-card">
+                    <ul class="summary-list">
+                        <li>Sentimiento dominante: <strong>{sentimiento_amplificado_dominante}</strong>.</li>
+                        <li>Impacto positivo: <strong>{positive_amplified_pct:.1%}</strong>.</li>
+                        <li>Impacto negativo: <strong>{negative_amplified_pct:.1%}</strong>.</li>
+                        <li>Impacto neutro: <strong>{neutral_amplified_pct:.1%}</strong>.</li>
+                        <li>Amplified Score: <strong>{amplified_score:.1f}</strong>.</li>
+                    </ul>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+    
+    
+        # =====================================================
+        # AMPLIFICACION SOCIAL
+        # =====================================================
+    
+        if usa_compartidos:
+    
+            panel_titulo(
+                "Conversación vs Amplificación",
+                "Comparación entre volumen de publicaciones y volumen total propagado."
+            )
+    
+            comparativo_amp = pd.DataFrame({
+                "sentimiento": ["POS", "NEG", "NEU"],
+                "Conversación": [
+                    positivos,
+                    negativos,
+                    neutros
+                ],
+                "Amplificación": [
+                    positive_amplified,
+                    negative_amplified,
+                    neutral_amplified
+                ]
+            })
+    
+            comparativo_amp = comparativo_amp.melt(
+                id_vars="sentimiento",
+                var_name="tipo",
+                value_name="valor"
+            )
+    
+            fig_amp = px.bar(
+                comparativo_amp,
+                x="sentimiento",
+                y="valor",
+                color="tipo",
+                barmode="group"
+            )
+    
+            st.plotly_chart(
+                estilizar_figura(
+                    fig_amp,
+                    height=420
+                ),
+                use_container_width=True
+            )
+        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+    
+        panel_titulo(
+            "Comentarios representativos",
+            "Selección automática del comentario positivo y del comentario negativo con mayor confianza del modelo."
+        )
+    
+        h1, h2 = st.columns(2)
+        positivos_df = (
+            df[df["sentimiento_dashboard"] == "POS"]
+            .sort_values("confianza", ascending=False)
+        )
+        negativos_df = (
+            df[df["sentimiento_dashboard"] == "NEG"]
+            .sort_values("confianza", ascending=False)
+        )
 
     with h1:
         if len(positivos_df):
