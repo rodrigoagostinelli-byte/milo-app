@@ -545,7 +545,8 @@ with st.sidebar:
         "Modelo",
         [
             "BETO",
-            "ROBERTUITO"
+            "ROBERTUITO",
+            "DISTILBERTO (⚡ Recomendado CPU)"
         ]
     )
 
@@ -681,6 +682,9 @@ patrones_negativos = [
     r"\b1 estrella\b",
 ]
 
+patrones_positivos_compilados = [re.compile(p) for p in patrones_positivos]
+patrones_negativos_compilados = [re.compile(p) for p in patrones_negativos]
+
 
 def normalizar_tonalidad(valor):
     if pd.isnull(valor):
@@ -732,12 +736,12 @@ def ajustar_sentimiento(texto, sentimiento_modelo, tonalidad=None):
 
     texto = str(texto).lower()
 
-    for p in patrones_positivos:
-        if re.search(p, texto):
+    for p in patrones_positivos_compilados:
+        if p.search(texto):
             return "POS*", "HEURISTICA"
 
-    for p in patrones_negativos:
-        if re.search(p, texto):
+    for p in patrones_negativos_compilados:
+        if p.search(texto):
             return "NEG*", "HEURISTICA"
 
     return sentimiento_modelo, "MODELO"
@@ -811,7 +815,8 @@ def obtener_top_bigramas(textos, top_n=10):
 def cargar_modelo(modelo_nombre):
     modelos = {
         "BETO": "finiteautomata/beto-sentiment-analysis",
-        "ROBERTUITO": "pysentimiento/robertuito-sentiment-analysis"
+        "ROBERTUITO": "pysentimiento/robertuito-sentiment-analysis",
+        "DISTILBERTO (⚡ Recomendado CPU)": "nlptown/bert-base-multilingual-uncased-sentiment"
     }
 
     nombre = modelos[modelo_nombre]
@@ -819,9 +824,7 @@ def cargar_modelo(modelo_nombre):
     tokenizer = AutoTokenizer.from_pretrained(nombre)
     model = AutoModelForSequenceClassification.from_pretrained(nombre)
 
-    device = torch.device(
-        "cuda" if torch.cuda.is_available() else "cpu"
-    )
+    device = torch.device("cpu")
 
     model.to(device)
 
@@ -879,6 +882,9 @@ if "resultado_df" not in st.session_state:
 
 if "contexto_resultado" not in st.session_state:
     st.session_state.contexto_resultado = {}
+
+if "hash_dataset" not in st.session_state:
+    st.session_state.hash_dataset = None
 
 
 # =====================================================
@@ -964,7 +970,22 @@ contexto_actual = {
     "modelo_nombre": modelo_nombre
 }
 
+import hashlib
+
+contenido_bytes = df[columna_texto].astype(str).values.tobytes()
+hash_actual = hashlib.md5(contenido_bytes).hexdigest()
+
+dataset_sin_cambios = (
+    st.session_state.hash_dataset == hash_actual
+    and st.session_state.contexto_resultado == contexto_actual
+)
+
+if dataset_sin_cambios and st.session_state.resultado_df is not None and not ejecutar:
+    st.info("📊 Usando análisis anterior (sin cambios detectados)")
+
 if ejecutar:
+    st.session_state.hash_dataset = hash_actual
+
     tokenizer, model, device = cargar_modelo(modelo_nombre)
 
     sentimientos = []
